@@ -1,3 +1,5 @@
+[中文](README.md) | [English](README.en.md)
+
 <p align="center"><img src="frontend/public/brand/logo.jpg" alt="知华科技 ZhuaTech" width="180"></p>
 
 # BoxTime · 知华集装箱免箱期与超期费用对账
@@ -8,7 +10,7 @@
 
 ## 业务与适用场景
 
-进口集装箱的卸船、提箱、还空箱日期决定免箱期和超期费用。货主、货代、箱务运营、复核人员与财务可在同一案件中核对约定、延期证据、逐日费用和承运账单。每个案件处理一个箱；同一提单的多个箱分别建案。
+进口集装箱的卸船、提箱、还空箱日期决定免箱期和超期费用。货主、货代、箱务运营、复核人员与财务可在同一案件中核对约定、延期证据、逐日费用和承运账单。每个案件处理一个箱；同一提单的多个箱分别建案。采用 Java 21、Spring Boot、Vue 3、MySQL 与 Flyway。
 
 业务依据可参考 [Maersk D&D 条款](https://terms.maersk.com/dnd)：码头内（Demurrage）、码头外（Detention）及合并计费有不同适用期间。具体合同的起止日、日历和费率须由负责人员核实后配置。这里没有导入或假定任何船公司的实际报价。
 
@@ -62,23 +64,39 @@
 
 ### 登录与首页
 
+登录页提供账号认证和语言切换。
+
 ![登录](docs/screenshots/login.jpg)
+
+首页汇总当前账号范围的箱务状态、费用和待处理事项。
 
 ![箱务首页](docs/screenshots/workbench.jpg)
 
 ### 核心业务与客户操作
 
+箱务详情展示合同快照、提还箱事实、延期和逐日免费／付费明细。
+
 ![箱务与逐日费用](docs/screenshots/container.jpg)
+
+货主端核对所属案件账单，登记确认或争议；不发起真实转账。
 
 ![货主账单确认](docs/screenshots/customer.jpg)
 
 ### 后台管理、统计与权限
 
+管理员维护内部岗位和客户绑定，接口仍独立执行范围限制。
+
 ![账号管理](docs/screenshots/accounts.jpg)
+
+费用统计仅汇总授权范围内已确认账单及已记录线下付款。
 
 ![费用统计](docs/screenshots/statistics.jpg)
 
+角色页配置 ALL／DEPARTMENT／SELF 和已注册功能；客户绑定优先于角色范围。
+
 ![角色权限](docs/screenshots/roles.jpg)
+
+手机布局提供同一套箱务流程，不增加移动端专属集成。
 
 ![手机页面](docs/screenshots/mobile.jpg)
 
@@ -109,7 +127,8 @@ compose.yaml                            MySQL、后端与前端
 
 ```bash
 python3 scripts/init-env.py
-docker compose up -d --build
+docker compose config --quiet
+docker compose up -d --build --wait
 docker compose ps
 ```
 
@@ -121,6 +140,8 @@ docker compose ps
 
 `.env.example` 列出环境变量名称。`DATABASE_PASSWORD`、`MYSQL_ROOT_PASSWORD`、`ADMIN_PASSWORD` 必填；`WEB_PORT` 默认8126、`BIND_ADDRESS` 默认127.0.0.1、`COOKIE_SECURE` 本地false。HTTPS公网部署须显式配置安全cookie、TLS和受控访问，不能直接沿用本机配置。
 
+源码开发需 Java 21、Maven 3.9、Node.js 24.19.0+ 和专用 MySQL。默认 Compose 不发布数据库端口，直接运行后端须使用独立可访问的测试数据库及 `DATABASE_URL`、`DATABASE_CATALOG`、`DATABASE_USER`、`DATABASE_PASSWORD`、`ADMIN_PASSWORD`。一个终端从根目录进入 `backend` 执行 `mvn spring-boot:run`，另一终端从根目录进入 `frontend` 执行 `npm ci`、`npm run dev`。前端开发服务绑定本机，代理后端 8080。
+
 ## 业务启动步骤
 
 创建客户 → 编制约定 → 另一位复核员批准 → 编制箱务 → 启用 → 提箱/还空箱 → 处理延期 → 核算 → 另一位复核员复核 → 录入承运账单 → 货主确认或争议 → 财务记录付款。详细字段与争议处理见 [操作手册](docs/操作手册.md)，接口见 [接口说明](docs/接口说明.md)。
@@ -129,7 +150,7 @@ docker compose ps
 
 数据库名 `zhuatech_boxtime`，账号 `boxtime`。脚本 [V1身份结构](backend/src/main/resources/db/migration/V1__identity.sql) 与 [V2箱务结构](backend/src/main/resources/db/migration/V2__container_time.sql) 由Flyway在空库自动执行，Hibernate只校验结构。包括账号、角色、权限、菜单、部门、字典、参数、审计、客户、约定、箱务、延期、付款、命令重试与业务事件；不含业务演示初始化。
 
-先备份，再以新版本镜像启动；保留MySQL卷，新增迁移升级，**不得改写已执行迁移**。管理员初始化密码只在空库使用；调整环境变量不会重置已有密码。停止服务用 `docker compose down`，不加 `-v`；删除卷会永久删除数据。备份、恢复与升级步骤见 [部署手册](docs/部署手册.md)。
+先备份，再以新版本镜像启动；保留MySQL卷，新增迁移升级，**不得改写已执行迁移**。管理员初始化密码只在空库使用；调整环境变量不会重置已有密码。主动重启时先重启 MySQL 并等待健康，再重启后端并等待健康，最后重启前端，使其代理解析当前后端地址。停止服务用 `docker compose down`，不加 `-v`；删除卷会永久删除数据。备份、恢复与升级步骤见 [部署手册](docs/部署手册.md)。
 
 ## 测试与构建
 
@@ -151,7 +172,8 @@ git diff --check
 改动格式时使用 `mvn -f backend/pom.xml spotless:apply` 与 `npm --prefix frontend run format`。真实业务验收脚本只运行在新建的、可清理的隔离库：
 
 ```bash
-docker compose -p boxtime-check up -d --build
+docker compose -p boxtime-check config --quiet
+docker compose -p boxtime-check up -d --build --wait
 python3 scripts/smoke.py --allow-test-writes
 python3 scripts/smoke.py --verify
 python3 scripts/release-check.py
@@ -166,6 +188,8 @@ python3 scripts/release-check.py
 TLS、外部域名、备份保管和正式客户数据导入需部署人员配置。源码学习版的全局写锁、目录上限和单币种边界不适合作为未经评估的大规模生产系统。安全边界与公开源码授权见 [安全说明](docs/安全说明.md)。
 
 ## 联系知华科技
+
+商业授权或深度定制开发请联系知华科技。
 
 **知华科技（上海如静知华信息科技有限公司）**
 
